@@ -2,6 +2,8 @@ import * as p from "@clack/prompts";
 import fs from "node:fs";
 import { setTimeout } from "node:timers/promises";
 import { clearDir, formatDir, isEmpty } from "@/utils/fs";
+import { cyan, magenta } from "picocolors";
+import { Formatter } from "picocolors/types";
 
 const defaultProjectName = "zome-project";
 const cancel = (note?: string) => {
@@ -10,6 +12,29 @@ const cancel = (note?: string) => {
   p.log.message("Bye! 👋🏻\n");
   process.exit(0);
 };
+
+type FrameworkVariant = {
+  value: string;
+  label: string;
+  color?: Formatter;
+};
+
+type Framework = {
+  value: string;
+  label: string;
+  color?: Formatter;
+  variants: FrameworkVariant[];
+};
+
+const FRAMEWORKS: Framework[] = [
+  {
+    value: "react",
+    label: "React",
+    color: cyan,
+    variants: [{ label: "SWC + Typescript", value: "ts" }],
+  },
+  { value: "next", label: "Next.js", color: magenta, variants: [] },
+];
 
 async function main() {
   console.clear();
@@ -60,17 +85,31 @@ async function main() {
   // 2. Get template folder
   const framework = await p.select({
     message: "Choose a framework:",
-    options: [
-      { value: "react", label: "React (Vite)" },
-      // { value: "angular", label: "Angular" },
-      // { value: "next", label: "Next.js" },
-      // { value: "tauri", label: "Tauri" },
-      // { value: "ts", label: "Vanilla TS" },
-    ],
+    options: FRAMEWORKS.map((f) => {
+      return {
+        label: f.color?.(f.label) ?? f.label,
+        value: f,
+      };
+    }),
   });
+  if (p.isCancel(framework)) return cancel();
 
-  // 3. Get flavor
-  // 4. Copy files from the template folder to the current directory
+  // 3. Get variant
+  const variant = await p.select({
+    message: "Select a variant:",
+    options: framework.variants.map((v) => {
+      return {
+        label: v.color?.(v.label) ?? v.label,
+        value: v,
+      };
+    }),
+  });
+  if (p.isCancel(variant)) return cancel();
+
+  // 4. Select Extras (Coming soon...)
+  // 5. Initialize git?
+  // 6. Install dependencies?
+  // 7. Setup project
 
   console.log({ name: projectName, path: projectPath, framework });
 }
