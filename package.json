@@ -12,7 +12,11 @@
   "author": "USpiry",
   "license": "ISC",
   "devDependencies": {
+    "@types/node": "^22.13.13",
     "tsup": "^8.4.0",
     "typescript": "^5.8.2"
+  },
+  "dependencies": {
+    "@clack/prompts": "^0.10.0"
   }
 }
