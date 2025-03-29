@@ -1,3 +1,9 @@
 node_modules/
 dist/
 temp/
+templates-src/
+templates/**/pnpm-lock.yaml
+templates/**/package-lock.json
+templates/**/yarn.lock
+templates/**/node_modules/
+templates/**/.gitignore
