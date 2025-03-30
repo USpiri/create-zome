@@ -2,11 +2,17 @@
   "name": "create-zome",
   "version": "1.0.0",
   "description": "Create zome awesome app",
-  "main": "index.js",
+  "bin": {
+    "create-zome": "./dist/index.js"
+  },
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "build": "tsup",
     "start": "tsup && node dist/index.js",
-    "dev": "tsup --watch"
+    "dev": "tsup --watch",
+    "prepublishOnly": "npm run build"
   },
   "keywords": [],
   "author": "USpiry",

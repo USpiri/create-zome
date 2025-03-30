@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import * as p from "@clack/prompts";
+import { intro } from "@clack/prompts";
 import { setTimeout } from "node:timers/promises";
 import { args } from "./utils";
 import {
@@ -25,7 +25,7 @@ async function main() {
   const { name: nameArg, template: templateArg } = await args(process.argv)
     .argv;
 
-  p.intro(`📂 create-zome Λ`);
+  intro(`📂 create-zome Λ`);
 
   // 1. Project name
   const { name } = await projectName(nameArg);
