@@ -18,8 +18,6 @@ import {
 // TODO:
 // - replace package.json commands with pkgManager "<manager> run dev", etc.
 // - Create tokens inside templates to replace: name and package
-// - Check template arg input
-// - Dinamically load variants on Options command
 
 async function main() {
   console.clear();
