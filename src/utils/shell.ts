@@ -12,8 +12,6 @@ export const shell = async (
   opts: ShellOptions,
 ) => {
   return new Promise((resolve, reject) => {
-    console.log(command, flags, opts);
-
     const child = spawn(command, flags, {
       cwd: opts.cwd,
       shell: true,
