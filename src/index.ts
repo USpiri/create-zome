@@ -1,52 +1,38 @@
 #!/usr/bin/env node
 
 import * as p from "@clack/prompts";
+import { glob } from "glob";
 import fs from "node:fs";
-import { setTimeout } from "node:timers/promises";
-import { blue, cyan, magenta, yellow } from "picocolors";
-import { Formatter } from "picocolors/types";
-import { clearDir, formatDir, isEmpty, args } from "./utils";
+import { cp, mkdir, rename } from "node:fs/promises";
 import path from "node:path";
+import { setTimeout } from "node:timers/promises";
 import { fileURLToPath } from "node:url";
+import { yellow } from "picocolors";
+import {
+  args,
+  clearDir,
+  formatDir,
+  getPackageManager,
+  isEmpty,
+  shell,
+  cancel,
+  print,
+} from "./utils";
+import { Framework, FrameworkVariant } from "./models";
+import { DEFAULT_PROJECT_NAME, FRAMEWORKS } from "./config";
 
-const defaultProjectName = "zome-project";
 const cwd = process.cwd();
-const cancel = (note?: string) => {
-  p.cancel("Operation cancelled.");
-  note && p.note(note, "Note:");
-  p.log.message("Bye! 👋🏻\n");
-  process.exit(0);
-};
 
-type FrameworkVariant = {
-  value: string;
-  label: string;
-  color?: Formatter;
-};
-
-type Framework = {
-  value: string;
-  label: string;
-  color?: Formatter;
-  variants: FrameworkVariant[];
-};
-
-const print = ({ color, label }: Framework | FrameworkVariant) =>
-  color ? color(label) : label;
-
-const FRAMEWORKS: Framework[] = [
-  {
-    value: "react",
-    label: "React",
-    color: cyan,
-    variants: [{ label: "Typescript", value: "ts", color: blue }],
-  },
-  { value: "next", label: "Next.js", color: magenta, variants: [] },
-];
+// TODO:
+// - replace package.json with pkgManager
+// - Create tokens inside templates to replace: name and package
+// - If template and name exists, there is no template or variant
+// These values can be obtained by filtering FRAMEWORKS and its variants
+// spliting <framework.value>-<variant.value>
 
 async function main() {
   console.clear();
-  await setTimeout(1000);
+  // await setTimeout(1000);
   const { name, template } = await args(process.argv).argv;
 
   p.intro(`📂 create-zome Λ`);
@@ -56,8 +42,8 @@ async function main() {
   if (!projectName) {
     const projectNamePrompt = await p.text({
       message: "Project name:",
-      defaultValue: defaultProjectName,
-      placeholder: defaultProjectName,
+      defaultValue: DEFAULT_PROJECT_NAME,
+      placeholder: DEFAULT_PROJECT_NAME,
       validate: (value: string) => {
         if (value.match(/[^a-zA-Z0-9-_]+/g))
           return "Project name can only contain letters, numbers, dashes and underscores";
@@ -133,23 +119,44 @@ async function main() {
 
   // 4. Select Extras (Coming soon...)
   // 5. Setup Project
-  // const templatePath = path.join(process.env.url!);
-
   const destination = path.join(cwd, projectPath);
-  const templatePath = path.resolve(
-    fileURLToPath(import.meta.url),
+  const templatePath = path.join(
+    path.dirname(fileURLToPath(import.meta.url)),
     "templates",
     `${framework?.value}`,
     `${variant?.value}`,
   );
 
-  console.log(destination, templatePath);
+  const spinner = p.spinner();
+  spinner.start("Creating project");
+
+  await mkdir(destination, { recursive: true });
+  await cp(templatePath, destination, { recursive: true });
+  let files = await glob(`**/*`, {
+    nodir: true,
+    cwd: destination,
+    absolute: true,
+  });
+
+  for await (const file of files) {
+    const basename = path.basename(file);
+    if (basename.startsWith("_")) {
+      const newPath = path.join(path.dirname(file), basename.replace("_", "."));
+      await rename(file, newPath);
+    }
+  }
+
+  spinner.stop("Project created!");
 
   // 6. Initialize git?
   let initializeGit = await p.confirm({
     message: "Do you want to initialize Git?",
   });
   if (p.isCancel(initializeGit)) initializeGit = false;
+  if (initializeGit) {
+    await shell("git", ["init"], { cwd: destination });
+    await shell("git", ["add", "-A"], { cwd: destination });
+  }
 
   // 7. Install dependencies?
   let installDependencies = await p.confirm({
@@ -157,17 +164,22 @@ async function main() {
   });
   if (p.isCancel(installDependencies)) installDependencies = false;
 
-  // TODO:
-  // - If template and name exists, there is no template or variant
-  // These values can be obtained by filtering FRAMEWORKS and its variants
-  // spliting <framework.value>-<variant.value>
+  const pkgInfo = getPackageManager(process.env.npm_config_user_agent);
+  const pkgManager = pkgInfo ? pkgInfo.name : "npm";
+  if (installDependencies) {
+    try {
+      await shell(pkgManager, ["install"], {
+        cwd: destination,
+        timeout: 90000,
+      });
+    } catch (error) {
+      console.log(error);
+    }
+  }
 
   p.outro(
     `${yellow("Awesome!")}\n You create ${projectName} in ${projectPath}`,
   );
-  // console.log(projectPath);
-  // console.log(initializeGit);
-  // console.log(installDependencies);
   process.exit(0);
 }
 
