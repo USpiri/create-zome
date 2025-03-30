@@ -1,5 +1,6 @@
-import { cyan, blue, green } from "picocolors";
+import { blue, green, bold } from "picocolors";
 import yargs from "yargs";
+import { getValidTemplates } from "./template";
 
 const description = `
 ${green("Welcome to create Zome Λ")}
@@ -10,12 +11,14 @@ Create a new project in TypeScript.
 With no arguments, start the CLI in interactive mode.
 `;
 
-const templates = `
-Available templates:
-
-${cyan("react-ts")}          React + Typescript
-\n
-`;
+const templates = [
+  bold("Available templates: \n"),
+  ...getValidTemplates().map(
+    ({ color, template, variant, frameworK }) =>
+      `${color ? color(template) : template}          ${frameworK} + ${variant}`,
+  ),
+  "-\n",
+].join("\n");
 
 export const args = (args: string[]) =>
   yargs(args)
